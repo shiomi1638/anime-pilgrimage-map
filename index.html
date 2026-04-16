@@ -476,14 +476,14 @@ function refreshImageMarkers() {
     }
     targetFeatures = [...regionMap.values()];
   } else {
-    // ビューポート内全地点（最大150件）
+    // ビューポート内全地点（最大50件）
     for (const f of geojsonData.features) {
       const p = f.properties;
       if (!p.image) continue;
       if (activeId !== null && p.aid !== activeId) continue;
       if (!bounds.contains(f.geometry.coordinates)) continue;
       targetFeatures.push(f);
-      if (targetFeatures.length >= 150) break;
+      if (targetFeatures.length >= 50) break;
     }
   }
 
