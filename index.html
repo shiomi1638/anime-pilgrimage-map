@@ -391,13 +391,12 @@ async function init() {
 let lastZoom = 0;
 
 function coverUrl(id) {
-  return `/img-cache/covers/${id}.jpg`;
+  return `https://image.anitabi.cn/covers/${id}.jpg`;
 }
 
 function imgUrl(url) {
   if (!url) return '';
-  // キャッシュプロキシ経由
-  return url.replace('https://image.anitabi.cn/', '/img-cache/');
+  return url;
 }
 
 function clearAllMarkers() {
