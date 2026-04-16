@@ -400,19 +400,16 @@ async function init() {
     source: 'points',
     type: 'symbol',
     minzoom: 10,
-    filter: ['!=', ['get', 'aid'], -1],
     layout: {
       'text-field': ['get', 'ja'],
-      'text-size': 11,
-      'text-offset': [0, 1.5],
+      'text-size': 12,
+      'text-offset': [0, 1.8],
       'text-anchor': 'top',
-      'text-font': ['Noto Sans Regular', 'Arial Unicode MS Regular'],
-      'text-max-width': 10,
     },
     paint: {
       'text-color': '#1a1a2e',
       'text-halo-color': '#fff',
-      'text-halo-width': 2,
+      'text-halo-width': 3,
     },
   });
 
