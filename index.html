@@ -394,6 +394,27 @@ async function init() {
     },
   });
 
+  // タイトルラベル（ズーム10以上で表示）
+  map.addLayer({
+    id: 'points-label',
+    source: 'points',
+    type: 'symbol',
+    minzoom: 10,
+    filter: ['!=', ['get', 'aid'], -1],
+    layout: {
+      'text-field': ['get', 'ja'],
+      'text-size': 11,
+      'text-offset': [0, 1.5],
+      'text-anchor': 'top',
+      'text-font': ['Noto Sans Regular', 'Arial Unicode MS Regular'],
+      'text-max-width': 10,
+    },
+    paint: {
+      'text-color': '#1a1a2e',
+      'text-halo-color': '#fff',
+      'text-halo-width': 2,
+    },
+  });
 
   map.on('click', 'points-bg', showPopup);
   map.on('click', 'points-active', showPopup);
