@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marker Test</title>
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    body { margin: 0; }
+    #map { width: 100vw; height: 100vh; }
+    .test-marker {
+      width: 40px; height: 40px;
+      border-radius: 6px;
+      background: red;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    }
+    .info {
+      position: absolute; top: 10px; left: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px; border-radius: 8px;
+      font-family: sans-serif; font-size: 13px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="info" id="info">Loading...</div>
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      center: [139.7, 35.68],
+      zoom: 12,
+    });
+
+    map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+
+    map.on('load', async () => {
+      const info = document.getElementById('info');
+      try {
+        const res = await fetch('./data/points.geojson');
+        const geojson = await res.json();
+        info.textContent = `Loaded ${geojson.features.length} points`;
+
+        // 最初の10件にマーカーを追加
+        const count = Math.min(10, geojson.features.length);
+        for (let i = 0; i < count; i++) {
+          const f = geojson.features[i];
+          const p = f.properties;
+          const el = document.createElement('div');
+          el.className = 'test-marker';
+          el.style.backgroundColor = p.color || 'blue';
+          el.title = `${p.ja} - ${p.name}`;
+          el.innerHTML = `<div style="color:#fff;font-size:10px;text-align:center;line-height:40px;">${i+1}</div>`;
+
+          new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat(f.geometry.coordinates)
+            .addTo(map);
+          
+          info.textContent += `\nMarker ${i+1}: [${f.geometry.coordinates[0].toFixed(2)}, ${f.geometry.coordinates[1].toFixed(2)}]`;
+        }
+
+        // クリックテスト
+        map.on('click', (e) => {
+          info.textContent = `Clicked: [${e.lngLat.lng.toFixed(4)}, ${e.lngLat.lat.toFixed(4)}]`;
+        });
+
+      } catch (err) {
+        info.textContent = `Error: ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
