@@ -394,15 +394,6 @@ async function init() {
     },
   });
 
-  // タイトルラベル用 HTML コンテナ
-  const labelContainer = document.createElement('div');
-  labelContainer.id = 'marker-labels';
-  labelContainer.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
-  document.querySelector('.map-wrap').appendChild(labelContainer);
-
-  map.on('move', updateLabels);
-  map.on('moveend', updateLabels);
-
   map.on('click', 'points-bg', showPopup);
   map.on('click', 'points-active', showPopup);
   ['points-bg','points-active'].forEach(id => {
@@ -544,25 +535,6 @@ function refreshImageMarkers() {
       .setLngLat(f.geometry.coordinates).addTo(map);
     markerCache.set(pid, marker);
   });
-}
-
-// ── Title labels on map ──
-function updateLabels() {
-  const zoom = map.getZoom();
-  if (zoom < 10) { labelContainer.innerHTML = ''; return; }
-  const bounds = map.getBounds();
-  let html = '';
-  let count = 0;
-  for (const f of geojsonData.features) {
-    const p = f.properties;
-    if (!p.ja || !p.image) continue;
-    const [lng, lat] = f.geometry.coordinates;
-    if (!bounds.contains([lng, lat])) continue;
-    const point = map.project([lng, lat]);
-    html += `<div style="position:absolute;left:${point.x}px;top:${point.y + 24}px;transform:translateX(-50%);background:rgba(255,255,255,.85);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;color:#1a1a2e;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.15);">${p.ja}</div>`;
-    if (++count >= 60) break;
-  }
-  labelContainer.innerHTML = html;
 }
 
 // ── 上部アニメバー ────────────────────────────────────────────────────
