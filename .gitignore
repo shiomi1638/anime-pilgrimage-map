@@ -2,3 +2,4 @@ data/img_cache/*
 !.gitkeep
 *.pyc
 __pycache__/
+!data/covers_thumb/

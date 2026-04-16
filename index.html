@@ -422,8 +422,7 @@ async function init() {
 let lastZoom = 0;
 
 function coverUrl(id) {
-  const src = `https://image.anitabi.cn/images/bangumi/${id}.jpg`;
-  return `https://images.weserv.nl/?url=${encodeURIComponent(src)}&w=100&q=80`;
+  return `./data/covers_thumb/${id}.jpg`;
 }
 
 function getAnimeColor(id) {
@@ -632,7 +631,7 @@ function renderSidebar() {
     const sub  = en ? (a.ja || a.cn) : '';
     return `
     <div class="anime-card ${a.id === activeId ? 'active' : ''}" data-aid="${a.id}">
-      <div class="anime-cover" style="background:${a.color || '#5b5bdb'}"></div>
+      <img class="anime-cover" src="${coverUrl(a.id)}" alt="" loading="lazy" onerror="this.style.background='${a.color||'#5b5bdb'}'">
       <div class="anime-info">
         <div class="anime-title">${main}</div>
         <div class="anime-sub">${sub ? sub + ' · ' : ''}${a.pointCount} spots</div>
