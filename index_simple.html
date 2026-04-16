@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime Pilgrimage Map</title>
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f0;color:#1a1a2e;height:100dvh;display:flex;flex-direction:column}
+    header{display:flex;align-items:center;gap:12px;padding:0 16px;height:52px;background:#fff;border-bottom:1px solid #e0e0e8;flex-shrink:0;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    header h1{font-size:16px;font-weight:700}
+    .tag{font-size:11px;background:#eeeef8;color:#5b5bdb;padding:2px 8px;border-radius:10px;font-weight:600}
+    .count-badge{margin-left:auto;font-size:11px;color:#aaa}
+    .layout{display:flex;flex:1;overflow:hidden}
+    aside{width:280px;flex-shrink:0;background:#fff;border-right:1px solid #e0e0e8;display:flex;flex-direction:column;overflow:hidden}
+    .search-wrap{padding:10px;border-bottom:1px solid #e8e8f0}
+    .search-wrap input{width:100%;background:#f5f5fa;border:1px solid #e0e0e8;border-radius:8px;padding:7px 10px;color:#1a1a2e;font-size:13px;outline:none}
+    .search-wrap input::placeholder{color:#bbb}
+    .search-wrap input:focus{border-color:#5b5bdb;background:#fff}
+    .filter-row{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid #e8e8f0;flex-wrap:wrap}
+    .filter-btn{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid #e0e0e8;background:transparent;color:#999;cursor:pointer}
+    .filter-btn.active{background:#5b5bdb;color:#fff;border-color:#5b5bdb}
+    .anime-list{flex:1;overflow-y:auto}
+    .anime-list::-webkit-scrollbar{width:3px}
+    .anime-list::-webkit-scrollbar-thumb{background:#e0e0e8}
+    .anime-card{display:flex;align-items:center;gap:9px;padding:7px 10px;cursor:pointer;transition:background .12s;border-bottom:1px solid #f0f0f5}
+    .anime-card:hover{background:#f5f5fa}
+    .anime-card.active{background:#eeeef8;border-left:3px solid #5b5bdb;padding-left:7px}
+    .anime-cover{width:34px;height:34px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#e8e8f0}
+    .anime-info{overflow:hidden;flex:1}
+    .anime-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .anime-sub{font-size:10px;color:#aaa;margin-top:1px}
+    .map-wrap{flex:1;position:relative;overflow:hidden}
+    #map{width:100%;height:100%}
+    .loading-overlay{position:fixed;inset:0;background:rgba(245,245,240,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:16px}
+    .loading-overlay p{font-size:14px;color:#888}
+    .progress-bar{width:200px;height:3px;background:#e0e0e8;border-radius:2px;overflow:hidden}
+    .progress-fill{height:100%;background:#5b5bdb;border-radius:2px;transition:width .3s}
+    .maplibregl-popup-content{background:#fff!important;border:1px solid #e0e0e8!important;border-radius:12px!important;padding:0!important;color:#1a1a2e!important;box-shadow:0 8px 32px rgba(0,0,0,.12)!important;min-width:220px;max-width:260px}
+    .maplibregl-popup-tip{border-top-color:#e0e0e8!important}
+    .maplibregl-popup-close-button{color:#bbb!important;font-size:18px!important;padding:6px 10px!important}
+    .popup-img{width:100%;height:140px;object-fit:cover;display:block;background:#f0f0f5;border-radius:12px 12px 0 0}
+    .popup-body{padding:10px 12px 12px}
+    .popup-anime{font-size:11px;color:#5b5bdb;margin-bottom:3px;font-weight:600}
+    .popup-name{font-size:13px;font-weight:600;line-height:1.35}
+    .popup-ep{font-size:11px;color:#aaa;margin-top:4px}
+    .popup-attr{font-size:10px;color:#ccc;margin-top:6px}
+    .popup-attr a{color:#5b5bdb;text-decoration:none}
+  </style>
+</head>
+<body>
+<div class="loading-overlay" id="loading">
+  <p id="loading-msg">Loading map data…</p>
+  <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+</div>
+
+<header>
+  <h1>🗾 Anime Pilgrimage Map</h1>
+  <span class="tag">English</span>
+  <span class="count-badge" id="header-count"></span>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="search-wrap"><input id="search" type="text" placeholder="Search anime…"></div>
+    <div class="filter-row" id="filter-row">
+      <button class="filter-btn active" data-type="all">All</button>
+      <button class="filter-btn" data-type="TV">TV</button>
+      <button class="filter-btn" data-type="Movie">Movie</button>
+      <button class="filter-btn" data-type="OVA">OVA</button>
+    </div>
+    <div class="anime-list" id="anime-list"></div>
+  </aside>
+  <div class="map-wrap"><div id="map"></div></div>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+<script>
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://tiles.openfreemap.org/styles/liberty',
+  center: [137.3, 37.8],
+  zoom: 5.2,
+});
+map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+
+const popup = new maplibregl.Popup({closeButton:true, maxWidth:'280px', offset:10});
+
+let allAnime = [], geojsonData = null, enTitles = {};
+let activeId = null, filterType = 'all', searchQuery = '';
+
+function setProgress(pct, msg) {
+  document.getElementById('progress').style.width = pct + '%';
+  if (msg) document.getElementById('loading-msg').textContent = msg;
+}
+
+function imgUrl(url) {
+  if (!url) return '';
+  return url.replace('https://image.anitabi.cn/', '/img-cache/');
+}
+
+function coverUrl(id) {
+  return `/img-cache/covers/${id}.jpg`;
+}
+
+async function init() {
+  setProgress(10, 'Loading…');
+  const [animeRes, pointsRes, enRes] = await Promise.all([
+    fetch('./data/anime.json'),
+    fetch('./data/points_mini.geojson'),
+    fetch('./data/en_titles.json').catch(() => ({json: async () => ({})})),
+  ]);
+  setProgress(60, 'Parsing…');
+  allAnime = await animeRes.json();
+  geojsonData = await pointsRes.json();
+  enTitles = await enRes.json();
+  setProgress(90, 'Rendering…');
+
+  await new Promise(r => { if (map.isStyleLoaded()) r(); else map.on('load', r); });
+
+  // クラスタ有効化
+  map.addSource('points', {
+    type: 'geojson',
+    data: geojsonData,
+  });
+
+  // クラスター円
+  map.addLayer({
+    id: 'clusters',
+    type: 'circle',
+    source: 'points',
+    filter: ['has', 'point_count'],
+    paint: {
+      'circle-color': ['step',['get','point_count'],'#5b5bdb',20,'#f59e0b',50,'#ef4444'],
+      'circle-radius': ['step',['get','point_count'],18,20,22,50,28],
+      'circle-stroke-width': 2.5,
+      'circle-stroke-color': '#fff',
+    },
+  });
+
+  // クラスター件数
+  map.addLayer({
+    id: 'cluster-count',
+    type: 'symbol',
+    source: 'points',
+    filter: ['has', 'point_count'],
+    layout: {'text-field':'{point_count_abbreviated}','text-size':14},
+    paint: {'text-color':'#fff'},
+  });
+
+  // 単一ポイント
+  map.addLayer({
+    id: 'unclustered',
+    type: 'circle',
+    source: 'points',
+    filter: ['!',['has','point_count']],
+    paint: {
+      'circle-color': ['get','color'],
+      'circle-radius': {base:1.75,stops:[[5,4],[8,6],[12,8],[16,12]]},
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': '#fff',
+      'circle-opacity': 0.9,
+    },
+  });
+
+  // クリック → クラスター展開
+  map.on('click', 'clusters', e => {
+    const f = e.features[0];
+    const cid = f.properties.cluster_id;
+    map.getSource('points').getClusterExpansionZoom(cid, (err, zoom) => {
+      if (err) return;
+      map.easeTo({center: f.geometry.coordinates, zoom: Math.min(zoom, 14), duration: 600});
+    });
+  });
+
+  // 単一ポイントクリック → ポップアップ
+  map.on('click', 'unclustered', e => {
+    const p = e.features[0].properties;
+    const epLabel = p.ep ? `EP${p.ep}${p.s ? ` — ${Math.floor(p.s/60)}:${String(p.s%60).padStart(2,'0')}` : ''}` : '';
+    const imgSrc = imgUrl(p.image);
+    popup.setLngLat(e.lngLat).setHTML(`
+      <div>
+        ${imgSrc ? `<img class="popup-img" src="${imgSrc}" loading="lazy" onerror="this.style.display='none'">` : ''}
+        <div class="popup-body">
+          <p class="popup-anime">${enTitles[String(p.aid)] || p.ja || p.cn_anime || ''}</p>
+          <p class="popup-name">${p.name || p.cn || '—'}</p>
+          ${epLabel ? `<p class="popup-ep">${epLabel}</p>` : ''}
+          <p class="popup-attr">Data: <a href="https://anitabi.cn" target="_blank">anitabi.cn</a></p>
+        </div>
+      </div>
+    `).addTo(map);
+  });
+
+  map.on('mouseenter', 'clusters', () => map.getCanvas().style.cursor = 'pointer');
+  map.on('mouseleave', 'clusters', () => map.getCanvas().style.cursor = '');
+
+  setProgress(100, 'Done');
+  document.getElementById('loading').remove();
+  document.getElementById('header-count').textContent = `${allAnime.length} anime · ${geojsonData.features.length.toLocaleString()} locations`;
+  renderSidebar();
+}
+
+// ── Sidebar ──
+function getFiltered() {
+  return allAnime.filter(a => {
+    const matchType = filterType === 'all' || a.type === filterType;
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !q || (a.ja && a.ja.toLowerCase().includes(q)) || (a.cn && a.cn.toLowerCase().includes(q));
+    return matchType && matchSearch;
+  });
+}
+
+function renderSidebar() {
+  const list = getFiltered();
+  document.getElementById('anime-list').innerHTML = list.map(a => {
+    const en = enTitles[String(a.id)] || '';
+    const main = en || a.ja || a.cn;
+    const sub = en ? (a.ja || a.cn) : '';
+    return `<div class="anime-card ${a.id===activeId?'active':''}" data-aid="${a.id}">
+      <img class="anime-cover" src="${coverUrl(a.id)}" alt="" loading="lazy" onerror="this.style.display='none'">
+      <div class="anime-info">
+        <div class="anime-title">${main}</div>
+        <div class="anime-sub">${sub?sub+' · ':''}${a.pointCount} spots</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Event delegation
+document.getElementById('anime-list').addEventListener('click', e => {
+  const card = e.target.closest('.anime-card');
+  if (!card) return;
+  selectAnime(Number(card.dataset.aid));
+});
+
+function selectAnime(id) {
+  activeId = id;
+  const anime = allAnime.find(a => a.id === id);
+  if (!anime) return;
+  map.flyTo({center: anime.geo, zoom: anime.zoom || 10, duration: 1200});
+  renderSidebar();
+}
+
+document.getElementById('filter-row').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  filterType = btn.dataset.type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === btn));
+  renderSidebar();
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  renderSidebar();
+});
+
+init().catch(err => {
+  document.getElementById('loading-msg').textContent = `Error: ${err.message}`;
+});
+</script>
+</body>
+</html>
