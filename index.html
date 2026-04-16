@@ -200,17 +200,27 @@
 
     /* Mobile */
     @media (max-width: 768px) {
-      aside { width: 100% !important; max-height: 33vh !important; border-right: none !important; border-bottom: 1px solid #e0e0e8; }
+      .menu-toggle { display: flex !important; }
+      aside {
+        position: fixed; top: 52px; left: 0; bottom: 0;
+        width: 80vw !important; max-width: 300px; max-height: none !important;
+        border-right: none !important; border-bottom: none !important;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+      aside.open { transform: translateX(0); }
+      .aside-overlay {
+        display: none; position: fixed; inset: 0; top: 52px;
+        background: rgba(0,0,0,0.3); z-index: 99;
+      }
+      .aside-overlay.open { display: block; }
       .layout { flex-direction: column !important; }
-      .map-wrap { min-height: 60vh !important; flex: 1 !important; }
-      .search-wrap { padding: 8px; }
-      .search-wrap input { font-size: 16px; }
-      .filter-row { padding: 6px 8px; }
-      .filter-btn { font-size: 12px; padding: 5px 12px; }
-      .anime-card { padding: 8px 10px; }
+      .map-wrap { min-height: calc(100dvh - 52px) !important; flex: 1 !important; }
       .map-overlay-top { right: 8px; height: 36px; }
       .map-overlay-right { display: none; }
     }
+    .menu-toggle { display: none; }
 
     /* Popup */
     .maplibregl-popup-content {
@@ -265,10 +275,14 @@
 </div>
 
 <header>
+  <button class="menu-toggle" id="menu-btn" aria-label="Menu"
+    style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px 8px;">☰</button>
   <h1>🗾 Anime Pilgrimage Map</h1>
   <span class="tag">English</span>
   <span class="count-badge" id="header-count"></span>
 </header>
+
+<div class="aside-overlay" id="aside-overlay"></div>
 
 <div class="layout">
   <aside>
@@ -505,7 +519,7 @@ function refreshImageMarkers() {
       if (activeId !== null && p.aid !== activeId) continue;
       if (!bounds.contains(f.geometry.coordinates)) continue;
       targetFeatures.push(f);
-      if (targetFeatures.length >= 50) break;
+      if (targetFeatures.length >= 25) break;
     }
   }
 
@@ -699,6 +713,16 @@ document.getElementById('filter-row').addEventListener('click', e => {
 document.getElementById('search').addEventListener('input', e => {
   searchQuery = e.target.value;
   renderSidebar();
+});
+
+// ── Mobile menu ───────────────────────────────────────────────────
+document.getElementById('menu-btn').addEventListener('click', () => {
+  document.querySelector('aside').classList.toggle('open');
+  document.getElementById('aside-overlay').classList.toggle('open');
+});
+document.getElementById('aside-overlay').addEventListener('click', () => {
+  document.querySelector('aside').classList.remove('open');
+  document.getElementById('aside-overlay').classList.remove('open');
 });
 
 // ── Start ─────────────────────────────────────────────────────────
