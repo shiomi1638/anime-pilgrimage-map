@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Cluster Test</title>
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    body{margin:0}
+    #map{width:100vw;height:100vh}
+    .cluster-marker{
+      width:40px;height:40px;border-radius:50%;
+      background:rgba(91,91,219,0.8);color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;font-weight:700;cursor:pointer;
+      border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);
+    }
+    .cluster-marker.leaf{
+      width:36px;height:36px;border-radius:6px;
+      background-size:cover;background-position:center;
+      border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/supercluster@8/dist/supercluster.min.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      center: [137.3, 37.8],
+      zoom: 5.2,
+    });
+    map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+
+    let index = null;
+    let geojson = null;
+
+    map.on('load', async () => {
+      const res = await fetch('./data/points_optimized.geojson.gz');
+      const data = await res.json();
+      geojson = data;
+
+      index = new Supercluster({ maxZoom: 12, radius: 50 });
+      index.load(geojson.features);
+
+      // クラスター用circleレイヤー
+      map.addSource('points', {
+        type: 'geojson',
+        data: geojson,
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50,
+      });
+
+      map.addLayer({
+        id: 'clusters',
+        type: 'circle',
+        source: 'points',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': [
+            'step', ['get', 'point_count'],
+            '#5b5bdb', 20, '#f59e0b', 50, '#ef4444'
+          ],
+          'circle-radius': ['step', ['get', 'point_count'], 15, 20, 22, 50, 28],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#fff',
+        },
+      });
+
+      map.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: 'points',
+        filter: ['has', 'point_count'],
+        paint: {
+          'text-color': '#fff',
+        },
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-size': 12,
+        },
+      });
+
+      map.addLayer({
+        id: 'unclustered-point',
+        type: 'circle',
+        source: 'points',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': '#5b5bdb',
+          'circle-radius': 4,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': '#fff',
+        },
+      });
+
+      // クラスタークリックでズームイン
+      map.on('click', 'clusters', (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+        if (!features.length) return;
+        const clusterId = features[0].properties.cluster_id;
+        const zoom = index.getClusterExpansionZoom(clusterId);
+        map.easeTo({
+          center: features[0].geometry.coordinates,
+          zoom: Math.min(zoom, 12),
+        });
+      });
+
+      map.on('mouseenter', 'clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'clusters', () => { map.getCanvas().style.cursor = ''; });
+
+      console.log('Supercluster loaded:', geojson.features.length, 'points');
+    });
+  </script>
+</body>
+</html>

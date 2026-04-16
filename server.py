@@ -35,11 +35,19 @@ def _load_data():
     except Exception as e:
         print(f"[api] anime.json 読み込みエラー: {e}")
 
-    try:
-        with open("data/points.geojson") as f:
+    # 最適化版pointsを使用（imageなしポイントを除去）
+    opt_path = Path("data/points_optimized.geojson")
+    if opt_path.exists():
+        with open(opt_path) as f:
             _points = json.load(f)["features"]
-    except Exception as e:
-        print(f"[api] points.geojson 読み込みエラー: {e}")
+        print(f"[api] points_optimized.geojson を使用 ({len(_points)} ポイント)")
+    else:
+        try:
+            with open("data/points.geojson") as f:
+                _points = json.load(f)["features"]
+            print(f"[api] points.geojson を使用 ({len(_points)} ポイント)")
+        except Exception as e:
+            print(f"[api] points.geojson 読み込みエラー: {e}")
 
     try:
         with open("data/en_titles.json") as f:

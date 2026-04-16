@@ -6,248 +6,50 @@
   <title>Anime Pilgrimage Map</title>
   <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f5f0;
-      color: #1a1a2e;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 0 16px;
-      height: 52px;
-      background: #fff;
-      border-bottom: 1px solid #e0e0e8;
-      flex-shrink: 0;
-      z-index: 10;
-      box-shadow: 0 1px 4px rgba(0,0,0,.06);
-    }
-    header h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; }
-    .tag {
-      font-size: 11px;
-      background: #eeeef8;
-      color: #5b5bdb;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-weight: 600;
-    }
-    .count-badge {
-      margin-left: auto;
-      font-size: 11px;
-      color: #aaa;
-    }
-
-    .layout { display: flex; flex: 1; overflow: hidden; }
-
-    aside {
-      width: 280px;
-      flex-shrink: 0;
-      background: #fff;
-      border-right: 1px solid #e0e0e8;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .search-wrap { padding: 10px; border-bottom: 1px solid #e8e8f0; }
-    .search-wrap input {
-      width: 100%;
-      background: #f5f5fa;
-      border: 1px solid #e0e0e8;
-      border-radius: 8px;
-      padding: 7px 10px;
-      color: #1a1a2e;
-      font-size: 13px;
-      outline: none;
-    }
-    .search-wrap input::placeholder { color: #bbb; }
-    .search-wrap input:focus { border-color: #5b5bdb; background: #fff; }
-
-    .filter-row {
-      display: flex;
-      gap: 6px;
-      padding: 8px 10px;
-      border-bottom: 1px solid #e8e8f0;
-      flex-wrap: wrap;
-    }
-    .filter-btn {
-      font-size: 11px;
-      padding: 3px 9px;
-      border-radius: 20px;
-      border: 1px solid #e0e0e8;
-      background: transparent;
-      color: #999;
-      cursor: pointer;
-    }
-    .filter-btn.active { background: #5b5bdb; color: #fff; border-color: #5b5bdb; }
-
-    .anime-list { flex: 1; overflow-y: auto; }
-    .anime-list::-webkit-scrollbar { width: 3px; }
-    .anime-list::-webkit-scrollbar-thumb { background: #e0e0e8; }
-
-    .anime-card {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 7px 10px;
-      cursor: pointer;
-      transition: background .12s;
-      border-bottom: 1px solid #f0f0f5;
-    }
-    .anime-card:hover { background: #f5f5fa; }
-    .anime-card.active { background: #eeeef8; border-left: 3px solid #5b5bdb; padding-left: 7px; }
-    .anime-cover {
-      width: 34px; height: 34px;
-      border-radius: 4px; object-fit: cover; flex-shrink: 0;
-      background: #e8e8f0;
-    }
-    .anime-info { overflow: hidden; flex: 1; }
-    .anime-title {
-      font-size: 12px; font-weight: 600; color: #1a1a2e;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .anime-sub { font-size: 10px; color: #aaa; margin-top: 1px; }
-    .anime-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%; flex-shrink: 0;
-      border: 1.5px solid rgba(0,0,0,.15);
-    }
-
-    .map-wrap { flex: 1; position: relative; overflow: hidden; }
-    #map { width: 100%; height: 100%; }
-
-    /* 上部アニメバー */
-    .map-overlay-top {
-      position: absolute;
-      top: 8px; left: 8px; right: 56px;
-      height: 44px;
-      background: rgba(255,255,255,.92);
-      backdrop-filter: blur(8px);
-      border-radius: 10px;
-      border: 1px solid #e0e0e8;
-      box-shadow: 0 2px 8px rgba(0,0,0,.08);
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      padding: 0 6px;
-      overflow-x: auto;
-      z-index: 5;
-    }
-    .map-overlay-top::-webkit-scrollbar { height: 0; }
-    .top-anime-item {
-      display: flex; align-items: center; gap: 5px;
-      padding: 4px 8px; border-radius: 20px;
-      cursor: pointer; white-space: nowrap; flex-shrink: 0;
-      transition: background .1s;
-    }
-    .top-anime-item:hover { background: #f0f0f8; }
-    .top-anime-item.active { background: #eeeef8; }
-    .top-anime-item img {
-      width: 24px; height: 24px;
-      border-radius: 4px; object-fit: cover; flex-shrink: 0;
-      background: #e8e8f0;
-    }
-    .top-anime-item span {
-      font-size: 11px; font-weight: 600; color: #333;
-      max-width: 90px; overflow: hidden; text-overflow: ellipsis;
-    }
-    .top-anime-item.active span { color: #5b5bdb; }
-
-    /* 右サムネイルパネル */
-    .map-overlay-right {
-      position: absolute;
-      top: 62px; right: 8px;
-      width: 108px;
-      max-height: calc(100% - 80px);
-      overflow-y: auto;
-      display: flex; flex-direction: column; gap: 4px;
-      z-index: 5;
-    }
-    .map-overlay-right::-webkit-scrollbar { width: 0; }
-    .thumb-item {
-      width: 100%; aspect-ratio: 16/9;
-      border-radius: 6px; overflow: hidden;
-      cursor: pointer; flex-shrink: 0;
-      box-shadow: 0 2px 6px rgba(0,0,0,.25);
-      transition: transform .15s;
-      background: #e8e8f0;
-    }
-    .thumb-item:hover { transform: scale(1.05); z-index: 1; position: relative; }
-    .thumb-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    /* 画像マーカー */
-    .img-marker {
-      width: 42px;
-      height: 42px;
-      border-radius: 6px;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      border: 2.5px solid #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,.35);
-      cursor: pointer;
-      transition: transform .15s;
-      /* MapLibreのマーカーは内部的にposition:absoluteで配置するため、
-         ここではpositionを指定しない */
-    }
-    .img-marker:hover {
-      transform: scale(1.1);
-      z-index: 10;
-    }
-
-    /* Popup */
-    .maplibregl-popup-content {
-      background: #fff !important;
-      border: 1px solid #e0e0e8 !important;
-      border-radius: 12px !important;
-      padding: 0 !important;
-      color: #1a1a2e !important;
-      box-shadow: 0 8px 32px rgba(0,0,0,.12) !important;
-      min-width: 220px; max-width: 260px;
-    }
-    .maplibregl-popup-tip { border-top-color: #e0e0e8 !important; }
-    .maplibregl-popup-close-button { color: #bbb !important; font-size: 18px !important; padding: 6px 10px !important; }
-
-    .popup-img {
-      width: 100%; height: 140px; object-fit: cover;
-      display: block; background: #f0f0f5;
-      border-radius: 12px 12px 0 0;
-    }
-    .popup-body { padding: 10px 12px 12px; }
-    .popup-anime { font-size: 11px; color: #5b5bdb; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-    .popup-name { font-size: 13px; font-weight: 600; line-height: 1.35; color: #1a1a2e; }
-    .popup-ep { font-size: 11px; color: #aaa; margin-top: 4px; }
-    .popup-attr { font-size: 10px; color: #ccc; margin-top: 6px; }
-    .popup-attr a { color: #5b5bdb; text-decoration: none; }
-
-    .loading-overlay {
-      position: fixed; inset: 0;
-      background: rgba(245,245,240,.95);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      z-index: 100;
-      gap: 16px;
-    }
-    .loading-overlay p { font-size: 14px; color: #888; }
-    .progress-bar {
-      width: 200px; height: 3px;
-      background: #e0e0e8; border-radius: 2px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; background: #5b5bdb;
-      border-radius: 2px;
-      transition: width .3s;
-    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f0;color:#1a1a2e;height:100dvh;display:flex;flex-direction:column}
+    header{display:flex;align-items:center;gap:12px;padding:0 16px;height:52px;background:#fff;border-bottom:1px solid #e0e0e8;flex-shrink:0;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    header h1{font-size:16px;font-weight:700}
+    .tag{font-size:11px;background:#eeeef8;color:#5b5bdb;padding:2px 8px;border-radius:10px;font-weight:600}
+    .count-badge{margin-left:auto;font-size:11px;color:#aaa}
+    .layout{display:flex;flex:1;overflow:hidden}
+    aside{width:280px;flex-shrink:0;background:#fff;border-right:1px solid #e0e0e8;display:flex;flex-direction:column;overflow:hidden}
+    .search-wrap{padding:10px;border-bottom:1px solid #e8e8f0}
+    .search-wrap input{width:100%;background:#f5f5fa;border:1px solid #e0e0e8;border-radius:8px;padding:7px 10px;color:#1a1a2e;font-size:13px;outline:none}
+    .search-wrap input::placeholder{color:#bbb}
+    .search-wrap input:focus{border-color:#5b5bdb;background:#fff}
+    .filter-row{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid #e8e8f0;flex-wrap:wrap}
+    .filter-btn{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid #e0e0e8;background:transparent;color:#999;cursor:pointer}
+    .filter-btn.active{background:#5b5bdb;color:#fff;border-color:#5b5bdb}
+    .anime-list{flex:1;overflow-y:auto}
+    .anime-list::-webkit-scrollbar{width:3px}
+    .anime-list::-webkit-scrollbar-thumb{background:#e0e0e8}
+    .anime-card{display:flex;align-items:center;gap:9px;padding:7px 10px;cursor:pointer;transition:background .12s;border-bottom:1px solid #f0f0f5}
+    .anime-card:hover{background:#f5f5fa}
+    .anime-card.active{background:#eeeef8;border-left:3px solid #5b5bdb;padding-left:7px}
+    .anime-cover{width:34px;height:34px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#e8e8f0}
+    .anime-info{overflow:hidden;flex:1}
+    .anime-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .anime-sub{font-size:10px;color:#aaa;margin-top:1px}
+    .map-wrap{flex:1;position:relative;overflow:hidden}
+    #map{width:100%;height:100%}
+    .loading-overlay{position:fixed;inset:0;background:rgba(245,245,240,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:16px}
+    .loading-overlay p{font-size:14px;color:#888}
+    .progress-bar{width:200px;height:3px;background:#e0e0e8;border-radius:2px;overflow:hidden}
+    .progress-fill{height:100%;background:#5b5bdb;border-radius:2px;transition:width .3s}
+    .maplibregl-popup-content{background:#fff!important;border:1px solid #e0e0e8!important;border-radius:12px!important;padding:0!important;color:#1a1a2e!important;box-shadow:0 8px 32px rgba(0,0,0,.12)!important;min-width:220px;max-width:260px}
+    .maplibregl-popup-tip{border-top-color:#e0e0e8!important}
+    .maplibregl-popup-close-button{color:#bbb!important;font-size:18px!important;padding:6px 10px!important}
+    .popup-img{width:100%;height:140px;object-fit:cover;display:block;background:#f0f0f5;border-radius:12px 12px 0 0}
+    .popup-body{padding:10px 12px 12px}
+    .popup-anime{font-size:11px;color:#5b5bdb;margin-bottom:3px;font-weight:600}
+    .popup-name{font-size:13px;font-weight:600;line-height:1.35}
+    .popup-ep{font-size:11px;color:#aaa;margin-top:4px}
+    .popup-attr{font-size:10px;color:#ccc;margin-top:6px}
+    .popup-attr a{color:#5b5bdb;text-decoration:none}
   </style>
 </head>
 <body>
-
 <div class="loading-overlay" id="loading">
   <p id="loading-msg">Loading map data…</p>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
@@ -261,9 +63,7 @@
 
 <div class="layout">
   <aside>
-    <div class="search-wrap">
-      <input id="search" type="text" placeholder="Search anime…">
-    </div>
+    <div class="search-wrap"><input id="search" type="text" placeholder="Search anime…"></div>
     <div class="filter-row" id="filter-row">
       <button class="filter-btn active" data-type="all">All</button>
       <button class="filter-btn" data-type="TV">TV</button>
@@ -272,464 +72,179 @@
     </div>
     <div class="anime-list" id="anime-list"></div>
   </aside>
-  <div class="map-wrap">
-    <div id="map"></div>
-    <div class="map-overlay-top" id="top-anime-bar"></div>
-    <div class="map-overlay-right" id="right-thumb-panel"></div>
-  </div>
+  <div class="map-wrap"><div id="map"></div></div>
 </div>
 
 <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
 <script>
-// ── Map ──────────────────────────────────────────────────────────
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://tiles.openfreemap.org/styles/liberty',
   center: [137.3, 37.8],
   zoom: 5.2,
-  attributionControl: true,
 });
 map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 
-const popup = new maplibregl.Popup({ closeButton: true, maxWidth: '280px', offset: 10 });
+const popup = new maplibregl.Popup({closeButton:true, maxWidth:'280px', offset:10});
 
-// ── State ─────────────────────────────────────────────────────────
-let allAnime = [];
-let geojsonData = null;
-let activeId = null;
-let filterType = 'all';
-let searchQuery = '';
-// pid → maplibregl.Marker のキャッシュ（ビューポート外を除去しながら再利用）
-const markerCache = new Map();
+let allAnime = [], geojsonData = null, enTitles = {};
+let activeId = null, filterType = 'all', searchQuery = '';
 
-// ── Helpers ───────────────────────────────────────────────────────
 function setProgress(pct, msg) {
   document.getElementById('progress').style.width = pct + '%';
   if (msg) document.getElementById('loading-msg').textContent = msg;
 }
 
-// ── Load data ─────────────────────────────────────────────────────
-let enTitles = {};
+function imgUrl(url) {
+  if (!url) return '';
+  return url.replace('https://image.anitabi.cn/', '/img-cache/');
+}
+
+function coverUrl(id) {
+  return `/img-cache/covers/${id}.jpg`;
+}
 
 async function init() {
-  setProgress(10, 'Loading anime list…');
+  setProgress(10, 'Loading…');
   const [animeRes, pointsRes, enRes] = await Promise.all([
     fetch('./data/anime.json'),
-    fetch('./data/points.geojson'),
-    fetch('./data/en_titles.json').catch(() => ({ json: async () => ({}) })),
+    fetch('./data/points_mini.geojson'),
+    fetch('./data/en_titles.json').catch(() => ({json: async () => ({})})),
   ]);
-  setProgress(60, 'Parsing data…');
-
+  setProgress(60, 'Parsing…');
   allAnime = await animeRes.json();
   geojsonData = await pointsRes.json();
   enTitles = await enRes.json();
+  setProgress(90, 'Rendering…');
 
-  setProgress(90, 'Rendering map…');
+  await new Promise(r => { if (map.isStyleLoaded()) r(); else map.on('load', r); });
 
-  // Wait for map style
-  await new Promise(resolve => {
-    if (map.isStyleLoaded()) resolve();
-    else map.on('load', resolve);
-  });
-
-  // ── GeoJSONソース ─────────────────────────────────────────────
+  // クラスタ有効化
   map.addSource('points', {
     type: 'geojson',
     data: geojsonData,
-    tolerance: 0.5,
+    cluster: true,
+    clusterMaxZoom: 14,
+    clusterRadius: 50,
   });
 
-  // 非選択アニメ：ドット（常に表示）
+  // クラスター円
   map.addLayer({
-    id: 'points-bg',
-    source: 'points',
+    id: 'clusters',
     type: 'circle',
-    filter: ['!=', ['get', 'aid'], -1],
+    source: 'points',
+    filter: ['has', 'point_count'],
     paint: {
-      'circle-color': ['get', 'color'],
-      'circle-radius': { base: 1.75, stops: [[4,3],[6,5],[8,7],[10,9],[12,11],[14,13],[16,15]] },
+      'circle-color': ['step',['get','point_count'],'#5b5bdb',20,'#f59e0b',50,'#ef4444'],
+      'circle-radius': ['step',['get','point_count'],18,20,22,50,28],
+      'circle-stroke-width': 2.5,
+      'circle-stroke-color': '#fff',
+    },
+  });
+
+  // クラスター件数
+  map.addLayer({
+    id: 'cluster-count',
+    type: 'symbol',
+    source: 'points',
+    filter: ['has', 'point_count'],
+    layout: {'text-field':'{point_count_abbreviated}','text-size':14},
+    paint: {'text-color':'#fff'},
+  });
+
+  // 単一ポイント
+  map.addLayer({
+    id: 'unclustered',
+    type: 'circle',
+    source: 'points',
+    filter: ['!',['has','point_count']],
+    paint: {
+      'circle-color': ['get','color'],
+      'circle-radius': {base:1.75,stops:[[5,4],[8,6],[12,8],[16,12]]},
       'circle-stroke-width': 1.5,
       'circle-stroke-color': '#fff',
       'circle-opacity': 0.9,
     },
   });
 
-  // 選択アニメ：大きく鮮明なドット
-  map.addLayer({
-    id: 'points-active',
-    source: 'points',
-    type: 'circle',
-    filter: ['==', ['get', 'aid'], -1],
-    paint: {
-      'circle-color': ['get', 'color'],
-      'circle-radius': { base: 1.75, stops: [[8,5],[13,9],[18,14]] },
-      'circle-stroke-width': 2.5,
-      'circle-stroke-color': '#fff',
-      'circle-opacity': 1,
-    },
+  // クリック → クラスター展開
+  map.on('click', 'clusters', e => {
+    const f = e.features[0];
+    const cid = f.properties.cluster_id;
+    map.getSource('points').getClusterExpansionZoom(cid, (err, zoom) => {
+      if (err) return;
+      map.easeTo({center: f.geometry.coordinates, zoom: Math.min(zoom, 14), duration: 600});
+    });
   });
 
-
-  map.on('click', 'points-bg', showPopup);
-  map.on('click', 'points-active', showPopup);
-  ['points-bg','points-active'].forEach(id => {
-    map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
-    map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
-  });
-
-  // マップが静止したタイミングで各オーバーレイを更新
-  let refreshTimer = null;
-  function scheduleRefresh() {
-    clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => {
-      refreshImageMarkers();
-      refreshTopBar();
-      refreshThumbPanel();
-    }, 200);
-  }
-
-  map.on('moveend', scheduleRefresh);
-  map.once('idle', scheduleRefresh);
-
-  setTimeout(() => {
-    refreshImageMarkers();
-    refreshTopBar();
-    refreshThumbPanel();
-  }, 1000);
-
-  setProgress(100, 'Done');
-  document.getElementById('loading').remove();
-
-  document.getElementById('header-count').textContent =
-    `${allAnime.length} anime · ${geojsonData.features.length.toLocaleString()} locations`;
-
-  renderSidebar();
-}
-
-// ── 画像マーカー ───────────────────────────────────────────────────
-let lastZoom = 0;
-
-function coverUrl(id) {
-  return `/img-cache/covers/${id}.jpg`;
-}
-
-function imgUrl(url) {
-  if (!url) return '';
-  // キャッシュプロキシ経由
-  return url.replace('https://image.anitabi.cn/', '/img-cache/');
-}
-
-function clearAllMarkers() {
-  markerCache.forEach(m => m.remove());
-  markerCache.clear();
-  if (map.getLayer('points-active'))
-    map.setLayoutProperty('points-active', 'visibility', 'visible');
-}
-
-function makeMarkerEl(f) {
-  const p = f.properties;
-  const el = document.createElement('div');
-  el.className = 'img-marker';
-  // デフォルト背景色（画像がなくてもドットとして表示）
-  el.style.backgroundColor = p.color || '#5b5bdb';
-
-  const src = imgUrl(p.image);
-  if (src) {
-    const img = new Image();
-    img.onload = () => {
-      el.style.backgroundImage = `url(${src})`;
-    };
-    img.onerror = () => {
-      // 画像読み込み失敗時は色背景のまま
-      el.style.opacity = '0.7';
-    };
-    img.src = src;
-  }
-
-  el.title = p.name || '';
-
-  el.addEventListener('click', e => {
-    e.stopPropagation();
-    const epLabel = p.ep
-      ? `EP${p.ep}${p.s ? ` — ${Math.floor(p.s/60)}:${String(p.s%60).padStart(2,'0')}` : ''}`
-      : '';
-    popup.setLngLat(f.geometry.coordinates).setHTML(`
+  // 単一ポイントクリック → ポップアップ
+  map.on('click', 'unclustered', e => {
+    const p = e.features[0].properties;
+    const epLabel = p.ep ? `EP${p.ep}${p.s ? ` — ${Math.floor(p.s/60)}:${String(p.s%60).padStart(2,'0')}` : ''}` : '';
+    const imgSrc = imgUrl(p.image);
+    popup.setLngLat(e.lngLat).setHTML(`
       <div>
-        ${src ? `<img class="popup-img" src="${src}" loading="lazy" onerror="this.style.display='none'">` : ''}
+        ${imgSrc ? `<img class="popup-img" src="${imgSrc}" loading="lazy" onerror="this.style.display='none'">` : ''}
         <div class="popup-body">
           <p class="popup-anime">${enTitles[String(p.aid)] || p.ja || p.cn_anime || ''}</p>
           <p class="popup-name">${p.name || p.cn || '—'}</p>
           ${epLabel ? `<p class="popup-ep">${epLabel}</p>` : ''}
-          <p class="popup-attr">Data: <a href="https://anitabi.cn" target="_blank" rel="noopener">anitabi.cn</a> · CC BY-NC-SA 4.0</p>
+          <p class="popup-attr">Data: <a href="https://anitabi.cn" target="_blank">anitabi.cn</a></p>
         </div>
       </div>
     `).addTo(map);
   });
-  return el;
+
+  map.on('mouseenter', 'clusters', () => map.getCanvas().style.cursor = 'pointer');
+  map.on('mouseleave', 'clusters', () => map.getCanvas().style.cursor = '');
+
+  setProgress(100, 'Done');
+  document.getElementById('loading').remove();
+  document.getElementById('header-count').textContent = `${allAnime.length} anime · ${geojsonData.features.length.toLocaleString()} locations`;
+  renderSidebar();
 }
 
-let _refreshToken = 0;
-
-function preloadImage(url) {
-  if (!url) return Promise.resolve(false);
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.src = url;
-  });
-}
-
-function getRegion(lat, lng) {
-  // 日本列島を8つの地方に分割（緯度・経度ベース）
-  if (lat >= 42.5) return 'hokkaido';        // 北海道
-  if (lat >= 40 && lng < 141.5) return 'tohoku-west';  // 日本海側東北
-  if (lat >= 40) return 'tohoku-east';        // 太平洋側東北
-  if (lat >= 37 && lng < 139) return 'hokuriku';        // 北陸
-  if (lat >= 37 && lng < 140.5) return 'tochigi';       // 栃木・福島
-  if (lat >= 36.5) return 'kanto-north';      // 北関東
-  if (lng < 136.5) return 'chugoku-shikoku';  // 中国・四国
-  if (lng < 138) return 'kansai';             // 近畿
-  if (lat >= 35) return 'chubu';              // 中部
-  if (lng < 140) return 'kanto-west';         // 西関東・山梨
-  if (lat >= 34.5) return 'kanto-east';       // 東関東・東京
-  if (lng < 133) return 'kyushu-west';        // 九州西部
-  return 'kyushu-east';                       // 九州東部・四国南部
-}
-
-function refreshImageMarkers() {
-  if (!geojsonData) return;
-  const token = ++_refreshToken;
-  const bounds = map.getBounds();
-  const zoom = map.getZoom();
-  lastZoom = zoom;
-
-  // 対象ポイントの選定
-  let targetFeatures = [];
-  if (zoom < 7) {
-    // 地方ごとに代表ポイントを1つずつ
-    const regionMap = new Map();
-    for (const f of geojsonData.features) {
-      const p = f.properties;
-      if (!p.image) continue;
-      if (activeId !== null && p.aid !== activeId) continue;
-      const coords = f.geometry.coordinates;
-      const region = getRegion(coords[1], coords[0]);
-      if (!regionMap.has(region)) regionMap.set(region, f);
-    }
-    targetFeatures = [...regionMap.values()];
-  } else {
-    // ビューポート内全地点（最大150件）
-    for (const f of geojsonData.features) {
-      const p = f.properties;
-      if (!p.image) continue;
-      if (activeId !== null && p.aid !== activeId) continue;
-      if (!bounds.contains(f.geometry.coordinates)) continue;
-      targetFeatures.push(f);
-      if (targetFeatures.length >= 150) break;
-    }
-  }
-
-  // 不要なマーカーを削除
-  const targetPids = new Set(targetFeatures.map(f => f.properties.pid));
-  markerCache.forEach((marker, pid) => {
-    if (!targetPids.has(pid)) { marker.remove(); markerCache.delete(pid); }
-  });
-
-  // 画像をバッチでプリロード（10件ずつ）→ 読み込み完了次第マーカー追加
-  const BATCH_SIZE = 10;
-  let index = 0;
-
-  async function processBatch() {
-    if (token !== _refreshToken) return;
-    if (index >= targetFeatures.length) return;
-
-    const batch = targetFeatures.slice(index, index + BATCH_SIZE);
-    index += BATCH_SIZE;
-
-    // バッチの画像を並列プリロード
-    await Promise.all(batch.map(f => preloadImage(imgUrl(f.properties.image))));
-    if (token !== _refreshToken) return;
-
-    // マーカーを追加
-    batch.forEach(f => {
-      const pid = f.properties.pid;
-      if (markerCache.has(pid)) return;
-      const marker = new maplibregl.Marker({ element: makeMarkerEl(f), anchor: 'bottom' })
-        .setLngLat(f.geometry.coordinates).addTo(map);
-      markerCache.set(pid, marker);
-    });
-
-    // 次のバッチを少し待ってから処理
-    setTimeout(processBatch, 30);
-  }
-
-  processBatch();
-}
-
-// ── 上部アニメバー ────────────────────────────────────────────────────
-function refreshTopBar() {
-  const bounds = map.getBounds();
-  const seenAid = new Set();
-  const animeInView = [];
-
-  for (const f of geojsonData.features) {
-    const aid = f.properties.aid;
-    if (seenAid.has(aid)) continue;
-    if (!bounds.contains(f.geometry.coordinates)) continue;
-    seenAid.add(aid);
-    const anime = allAnime.find(a => a.id === aid);
-    if (anime) animeInView.push(anime);
-  }
-
-  const bar = document.getElementById('top-anime-bar');
-  bar.innerHTML = animeInView.map(a => {
-    const title = enTitles[String(a.id)] || a.ja || a.cn || '';
-    return `<div class="top-anime-item ${a.id === activeId ? 'active' : ''}" data-aid="${a.id}" title="${title.replace(/"/g,'&quot;')}">
-      <img src="${coverUrl(a.id)}" onerror="this.style.display='none'">
-      <span>${title}</span>
-    </div>`;
-  }).join('');
-}
-
-// ── 右サムネイルパネル ────────────────────────────────────────────────
-function refreshThumbPanel() {
-  const bounds = map.getBounds();
-  const thumbs = [];
-
-  for (const f of geojsonData.features) {
-    const p = f.properties;
-    if (!p.image) continue;
-    if (!bounds.contains(f.geometry.coordinates)) continue;
-    thumbs.push(f);
-    if (thumbs.length >= 30) break;
-  }
-
-  const panel = document.getElementById('right-thumb-panel');
-  panel.innerHTML = thumbs.map(f => {
-    const p = f.properties;
-    const [lng, lat] = f.geometry.coordinates;
-    return `<div class="thumb-item" data-lng="${lng}" data-lat="${lat}">
-      <img src="${imgUrl(p.image)}" loading="lazy" onerror="this.parentElement.style.display='none'">
-    </div>`;
-  }).join('');
-}
-
-function focusPoint(lng, lat) {
-  map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 14), duration: 800 });
-}
-
-// ── Popup ─────────────────────────────────────────────────────────
-function showPopup(e) {
-  const p = e.features[0].properties;
-  const epLabel = p.ep
-    ? `EP${p.ep}${p.s ? ` — ${Math.floor(p.s/60)}:${String(p.s%60).padStart(2,'0')}` : ''}`
-    : '';
-
-  popup.setLngLat(e.lngLat).setHTML(`
-    <div>
-      ${p.image ? `<img class="popup-img" src="${imgUrl(p.image)}" loading="lazy" onerror="this.style.display='none'">` : ''}
-      <div class="popup-body">
-        <p class="popup-anime">${enTitles[String(p.aid)] || p.ja || p.cn_anime || ''}</p>
-        <p class="popup-name">${p.name || p.cn || '—'}</p>
-        ${epLabel ? `<p class="popup-ep">${epLabel}</p>` : ''}
-        <p class="popup-attr">Data: <a href="https://anitabi.cn" target="_blank" rel="noopener">anitabi.cn</a> · CC BY-NC-SA 4.0</p>
-      </div>
-    </div>
-  `).addTo(map);
-}
-
-// ── Sidebar ───────────────────────────────────────────────────────
+// ── Sidebar ──
 function getFiltered() {
   return allAnime.filter(a => {
     const matchType = filterType === 'all' || a.type === filterType;
     const q = searchQuery.toLowerCase();
-    const matchSearch = !q ||
-      (a.ja && a.ja.toLowerCase().includes(q)) ||
-      (a.cn && a.cn.toLowerCase().includes(q));
+    const matchSearch = !q || (a.ja && a.ja.toLowerCase().includes(q)) || (a.cn && a.cn.toLowerCase().includes(q));
     return matchType && matchSearch;
   });
 }
 
 function renderSidebar() {
   const list = getFiltered();
-  const el = document.getElementById('anime-list');
-  el.innerHTML = list.map(a => {
-    const en  = enTitles[String(a.id)] || '';
+  document.getElementById('anime-list').innerHTML = list.map(a => {
+    const en = enTitles[String(a.id)] || '';
     const main = en || a.ja || a.cn;
-    const sub  = en ? (a.ja || a.cn) : '';
-    return `
-    <div class="anime-card ${a.id === activeId ? 'active' : ''}" data-aid="${a.id}">
+    const sub = en ? (a.ja || a.cn) : '';
+    return `<div class="anime-card ${a.id===activeId?'active':''}" data-aid="${a.id}">
       <img class="anime-cover" src="${coverUrl(a.id)}" alt="" loading="lazy" onerror="this.style.display='none'">
       <div class="anime-info">
         <div class="anime-title">${main}</div>
-        <div class="anime-sub">${sub ? sub + ' · ' : ''}${a.pointCount} spots</div>
+        <div class="anime-sub">${sub?sub+' · ':''}${a.pointCount} spots</div>
       </div>
-      <div class="anime-dot" style="background:${a.color || '#5b5bdb'}"></div>
     </div>`;
   }).join('');
 }
 
-function prefetchAnimeImages(id) {
-  const points = geojsonData.features.filter(f => f.properties.aid === id && f.properties.image);
-  points.forEach(f => {
-    const img = new Image();
-    img.src = imgUrl(f.properties.image);
-  });
-}
-
-function selectAnime(id) {
-  activeId = id;
-  const anime = allAnime.find(a => a.id === id);
-  if (!anime) return;
-
-  // fly中にバックグラウンドでプリフェッチ
-  prefetchAnimeImages(id);
-
-  clearAllMarkers();
-  map.setLayoutProperty('points-active', 'visibility', 'visible');
-  map.setFilter('points-bg',     ['!=', ['get', 'aid'], id]);
-  map.setFilter('points-active', ['==', ['get', 'aid'], id]);
-
-  const targetZoom = anime.zoom || 10;
-  map.flyTo({ center: anime.geo, zoom: targetZoom, duration: 1200 });
-
-  // flyTo完了後に画像マーカーを再表示
-  map.once('moveend', () => {
-    refreshImageMarkers();
-    refreshTopBar();
-    refreshThumbPanel();
-  });
-
-  renderSidebar();
-  const card = document.querySelector('.anime-card.active');
-  if (card) card.scrollIntoView({ block: 'nearest' });
-}
-
-// ── Event Delegation ──────────────────────────────────────────────
-
-// サイドバー：アニメカードクリック
+// Event delegation
 document.getElementById('anime-list').addEventListener('click', e => {
   const card = e.target.closest('.anime-card');
   if (!card) return;
   selectAnime(Number(card.dataset.aid));
 });
 
-// 上部バー：アニメアイコンクリック
-document.getElementById('top-anime-bar').addEventListener('click', e => {
-  const item = e.target.closest('.top-anime-item');
-  if (!item) return;
-  selectAnime(Number(item.dataset.aid));
-});
+function selectAnime(id) {
+  activeId = id;
+  const anime = allAnime.find(a => a.id === id);
+  if (!anime) return;
+  map.flyTo({center: anime.geo, zoom: anime.zoom || 10, duration: 1200});
+  renderSidebar();
+}
 
-// 右サムネイルパネルクリック
-document.getElementById('right-thumb-panel').addEventListener('click', e => {
-  const thumb = e.target.closest('.thumb-item');
-  if (!thumb) return;
-  focusPoint(Number(thumb.dataset.lng), Number(thumb.dataset.lat));
-});
-
-// ── Filters ───────────────────────────────────────────────────────
 document.getElementById('filter-row').addEventListener('click', e => {
   const btn = e.target.closest('.filter-btn');
   if (!btn) return;
@@ -743,9 +258,8 @@ document.getElementById('search').addEventListener('input', e => {
   renderSidebar();
 });
 
-// ── Start ─────────────────────────────────────────────────────────
 init().catch(err => {
-  document.getElementById('loading-msg').textContent = `Error: ${err.message}. Run a local server (see README).`;
+  document.getElementById('loading-msg').textContent = `Error: ${err.message}`;
 });
 </script>
 </body>
